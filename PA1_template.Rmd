@@ -1,0 +1,147 @@
+---
+title: "Reproducible Research: Peer Assessment 1"
+output: 
+  html_document:
+    keep_md: true
+---
+
+
+Activity monitoring is one of the most popular modern application of data science:)  
+Particularly we found a lot of data about walking activity of some person in the form of zipped activity.csv file and going to analyze them unpacking properly first.  
+Dataset contains:  
+- steps: Number of steps taking in a 5-minute interval (missing values are coded as NA)  
+- date: The date on which the measurement was taken in YYYY-MM-DD format  
+- interval: Identifier for the 5-minute interval in which measurement was taken  
+
+## Loading and preprocessing the data
+
+First of all let's load data and make a shot view on them
+```{r}
+setwd(".")
+unzip("activity.zip",exdir=".")
+activity <- read.csv("activity.csv")
+str(activity)
+```
+Obviously they contains a lot of Not Available values in the "steps" field.  
+Now let's clean data from NA and see again.
+```{r}
+data_clean <- subset(activity, !is.na(activity$steps))
+str(data_clean)
+```
+Oh! Now our data is looking much better :)  
+  
+
+
+## What is mean total number of steps taken per day?
+Now let's calculate the total number of steps taken per day
+```{r}
+total_steps <- aggregate(data_clean$steps, by=list(data_clean$date), FUN=sum)
+colnames(total_steps) <- c("Date", "Steps")
+head(total_steps)
+```
+
+Looks good!  
+So we are ready to plot a histogram of this total values below.  
+Make sure that you understand from the plot that most frequently the person performed from 10 upto 15 thousand of steps during a day.  
+Such days were 25 from 61 total days of observations.
+
+```{r}
+hist(total_steps$Steps, main="Total steps per day histo", xlab="Total steps", ylab="Days")
+```
+
+Let's calculate and report mean and median of total steps per day.
+```{r}
+mean(total_steps$Steps)
+```
+
+```{r}
+median(total_steps$Steps)
+```
+
+
+
+## What is the average daily activity pattern?
+Now, that is a really interesting question which time of day a person more moving on the feet than another time.  
+Let's prepare a proper data set
+```{r}
+steps_by_interval <- aggregate(data_clean$steps, by=list(data_clean$interval), FUN=mean)
+colnames(steps_by_interval) <- c("Interval", "Steps")
+head(steps_by_interval)
+```
+
+and now plot it to make evident which of 5-min intervals is the champion!
+```{r}
+plot(steps_by_interval$Interval, steps_by_interval$Steps, type="l", main="Average steps by intervals", xlab="5-min interval", ylab="Steps")
+```
+
+Ha-ha! As you can see it's a very sharped guy and he lives about 800th interval.  
+Let's calculate exactly
+```{r}
+max_by_cols <- sapply(steps_by_interval, max, na.rm = TRUE)
+max_steps_int <- steps_by_interval[steps_by_interval$Steps == max_by_cols[2],][[1]]
+max_steps_int
+```
+
+Perfect! And what hour is that moment?
+```{r}
+max_steps_int %/% 60
+```
+
+And on which minute of hour?
+```{r}
+max_steps_int %% 60
+```
+
+Aha! 13:55! We can guess that's time when the person was hurrying back to work after the lunch :)  
+Agree?  
+
+
+
+## Imputing missing values
+For continuation of our study we need more accurately deal with NA values which were just thrown out at the beginning above.  
+Now let's at first calculate and report the total number of missing values in the original activity dataset (i.e. the total number of rows with NAs)
+```{r}
+nrow(subset(activity, is.na(activity$steps)))
+```
+We want to replace NA values with the mean calculated above for the corresponding interval
+```{r}
+i <- 0
+activity_no_NA = activity
+while (i < nrow(activity)){
+    i <- i + 1
+    if (is.na(activity[i,]$steps)){
+        activity_no_NA[i,]$steps <- subset(steps_by_interval, steps_by_interval$Interval == activity[i,]$interval)[[2]]
+    }     
+}
+nrow(subset(activity_no_NA, is.na(activity_no_NA$steps)))
+```
+
+Now let's recreate a histogram of the total number of steps taken each day 
+
+```{r}
+total_steps2 <- aggregate(activity_no_NA$steps, by=list(activity_no_NA$date), FUN=sum)
+colnames(total_steps2) <- c("Date", "Steps")
+hist(total_steps2$Steps, main="Total steps per day histo", xlab="Total steps", ylab="Days")
+```
+
+and recalculate and report the mean and median total number of steps taken per day: 
+
+```{r}
+mean(total_steps2$Steps)
+```
+
+```{r}
+median(total_steps2$Steps)
+```
+
+*Do these values differ from the estimates from the first part of the assignment?*  
+
+We can only notice a slight diff in median value which is equal to mean now. That's because we changed a part of data to the mean value.  
+
+*What is the impact of imputing missing data on the estimates of the total daily number of steps?*  
+
+We conclude that actually no impact. But now even more days (35 against 25) belong to the most popular range.  
+
+
+
+## Are there differences in activity patterns between weekdays and weekends?
