@@ -145,3 +145,20 @@ We conclude that actually no impact. But now even more days (35 against 25) belo
 
 
 ## Are there differences in activity patterns between weekdays and weekends?
+Now we create a new factor variable in the dataset with two levels - "weekday" and "weekend" indicating whether a given date is a weekday or weekend day.  
+And repeat calculations above of mean steps by interval but splitting additionally by factor weekday.
+```{r}
+activity_no_NA$weekday <- sapply(activity_no_NA$date, function(d) if (as.POSIXlt(d)$wday > 0 & as.POSIXlt(d)$wday < 6) "Weekday" else "Weekend")
+steps_weekday_interval <- aggregate(activity_no_NA$steps, by=list(activity_no_NA$weekday, activity_no_NA$interval), FUN=mean)
+colnames(steps_weekday_interval) <- c("Weekday", "Interval", "Steps")
+```
+
+And now we create a plot for these data.  
+Weekens are at upper plot and usual weekdays are on the lower one.  
+You can see a sufficient difference in number of steps distribution depending of kind of day.
+
+
+```{r}
+coplot(Steps ~ Interval | Weekday , rows=2, columns=1, type="l", xlab=c("Interval",""), ylab="Number of steps", data=steps_weekday_interval, show.given=FALSE, col="blue", main="", axlabels=function(x) x)
+```
+
